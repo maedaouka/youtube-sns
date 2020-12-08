@@ -120,6 +120,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(MyApp());
@@ -162,7 +164,11 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: [
+      "https://www.googleapis.com/auth/youtube"
+    ]
+  );
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Future<FirebaseUser> _handleSignIn() async {
@@ -179,6 +185,21 @@ class _MyHomePageState extends State<MyHomePage> {
       );
       final FirebaseUser user = (await _auth.signInWithCredential(credential)).user;
       print("signed in " + user.displayName);
+      print("user");
+      print(user);
+      print("google auth");
+      print(googleAuth.accessToken);
+
+      // final url = "https://www.googleapis.com/youtube/v3/videos?id=7lCDEYXw3mM&key=AIzaSyCpPTlS1qzJkCFQ9OJEe7oNGwx4KYoIHEI&part=snippet,contentDetails,statistics,status";
+      // final url = "https://www.googleapis.com/youtube/v3/channels?key=AIzaSyCpPTlS1qzJkCFQ9OJEe7oNGwx4KYoIHEI&part=id&id=1";
+
+      //TODO: 不要かどうか別のGoogleアカウントで　確認。 おそらく不要。
+      // final response1 = await http.get("https://www.googleapis.com/auth/youtube.force-ssl");
+
+      final url = "https://www.googleapis.com/youtube/v3/channels?part=id,snippet,status&mine=true&access_token="+ googleAuth.accessToken;
+      final response = await http.get(url);
+      print("レスポンス");
+      print(response.body);
 
       return user;
     } catch (e) {
