@@ -232,11 +232,11 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void transitionNextPage(FirebaseUser user) {
+  void transitionMyPage(FirebaseUser user) {
     if (user == null) return;
 
     Navigator.push(context, MaterialPageRoute(builder: (context) =>
-        NextPage(userData: user)
+        MyPage(userData: user)
     ));
   }
 
@@ -255,7 +255,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 onPressed: () {
                   _handleSignIn()
                       .then((FirebaseUser user) =>
-                      transitionNextPage(user)
+                      transitionMyPage(user)
                   )
                       .catchError((e) => print(e));
                 },
@@ -267,23 +267,23 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class NextPage extends StatefulWidget {
+class MyPage extends StatefulWidget {
   FirebaseUser userData;
 
-  NextPage({Key key, this.userData}) : super(key: key);
+  MyPage({Key key, this.userData}) : super(key: key);
 
   @override
-  _NextPageState createState() => _NextPageState(userData);
+  _MyPageState createState() => _MyPageState(userData);
 }
 
-class _NextPageState extends State<NextPage> {
+class _MyPageState extends State<MyPage> {
   FirebaseUser userData;
   String name = "";
   String email;
   String photoUrl;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  _NextPageState(FirebaseUser userData) {
+  _MyPageState(FirebaseUser userData) {
     this.userData = userData;
     this.name = userData.displayName;
     this.email = userData.email;
