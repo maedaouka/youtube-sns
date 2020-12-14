@@ -117,9 +117,12 @@
 // }
 
 
+// import 'dart:html';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -200,6 +203,27 @@ class _MyHomePageState extends State<MyHomePage> {
       final response = await http.get(url);
       print("レスポンス");
       print(response.body);
+
+      final url2 = "https://developers.google.com/apis-explorer/#p/youtube/v3/youtube.subscriptions?part=id,snippet&mySubscribers=true&access_token="+ googleAuth.accessToken;
+      final response2 = await http.get(url2);
+      print("自分のチャンネル登録者");
+      print(response2.body);
+
+      final url3 = "https://developers.google.com/apis-explorer/#p/youtube/v3/youtube.subscriptions.list?part=snippet,contentDetails&mine=true";
+      final response3 = await http.get(url3);
+      print("自分がチャンネル登録してるチャンネル");
+      print(response3.body);
+
+      // Navigator.push(context, MaterialPageRoute(builder: (context) => TestList()));
+      final res = await Firestore.instance.collection('users').snapshots().listen((data) {
+        // data.documents.forEach(data => print(data));
+        for (var document in data.documents) {
+          print(document.data);
+        }
+        print(data.documents);
+        print(data.documents[0].data);
+      });
+      print(res.toString());
 
       return user;
     } catch (e) {
@@ -308,3 +332,28 @@ class _NextPageState extends State<NextPage> {
     );
   }
 }
+//
+// class TestList extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return StreamBuilder<QuerySnapshot>(
+//       stream: Firestore.instance.collection('users').snapshots(),
+//       builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+//         if (snapshot.hasError)
+//           return new Text('Error: ${snapshot.error}');
+//         switch (snapshot.connectionState) {
+//           case ConnectionState.waiting: return new Text('Loading...');
+//           default:
+//             return new ListView(
+//               children: snapshot.data.documents.map((DocumentSnapshot document) {
+//                 return new ListTile(
+//                   title: new Text("aa"),
+//                   subtitle: new Text("bb∂ß"),
+//                 );
+//               }).toList(),
+//             );
+//         }
+//       },
+//     );
+//   }
+// }
