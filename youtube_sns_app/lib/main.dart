@@ -135,7 +135,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Youtube SNS',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -152,7 +152,7 @@ class MyApp extends StatelessWidget {
         // closer together (more dense) than on mobile platforms.
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: LoginPage(title: 'Flutter Demo Home Page'),
+      home: LoginPage(title: 'Login Page'),
     );
   }
 }
@@ -167,6 +167,8 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  var youtubeData;
+
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [
       "https://www.googleapis.com/auth/youtube"
@@ -205,7 +207,7 @@ class _LoginPageState extends State<LoginPage> {
       print(response.body);
       print("Youtube uid");
       // Youtubeチャンネルはこの時点で一個しか取れないので0番目を取得する。
-      var youtubeData = jsonDecode(response.body)["items"][0];
+      youtubeData = jsonDecode(response.body)["items"][0];
       print(youtubeData);
 
 
@@ -256,7 +258,7 @@ class _LoginPageState extends State<LoginPage> {
     if (user == null) return;
 
     Navigator.push(context, MaterialPageRoute(builder: (context) =>
-        MyPage(userData: user)
+        MyPage(userData: user, youtubeUserData: youtubeData)
     ));
   }
 
@@ -289,22 +291,25 @@ class _LoginPageState extends State<LoginPage> {
 
 class MyPage extends StatefulWidget {
   FirebaseUser userData;
+  var youtubeUserData;
 
-  MyPage({Key key, this.userData}) : super(key: key);
+  MyPage({Key key, this.userData, this.youtubeUserData}) : super(key: key);
 
   @override
-  _MyPageState createState() => _MyPageState(userData);
+  _MyPageState createState() => _MyPageState(userData, youtubeUserData);
 }
 
 class _MyPageState extends State<MyPage> {
   FirebaseUser userData;
+  var youtubeUserData;
   String name = "";
   String email;
   String photoUrl;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  _MyPageState(FirebaseUser userData) {
+  _MyPageState(FirebaseUser userData, youtubeUserData) {
     this.userData = userData;
+    this.youtubeUserData = youtubeUserData;
     this.name = userData.displayName;
     this.email = userData.email;
     this.photoUrl = userData.photoUrl;
@@ -336,7 +341,7 @@ class _MyPageState extends State<MyPage> {
                   fontSize: 24,
                 ),
               ),
-              Text(this.email,
+              Text("@" + this.youtubeUserData["id"],
                 style: TextStyle(
                   fontSize: 24,
                 ),
@@ -351,7 +356,7 @@ class _MyPageState extends State<MyPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => CreateMessagePage(userData)));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => CreateMessagePage(userData, youtubeUserData)));
         },
         tooltip: 'Increment',
         child: Icon(Icons.add),
@@ -364,13 +369,15 @@ class CreateMessagePage extends StatefulWidget {
   @override
   _CreateMessagePageState createState() => new _CreateMessagePageState();
 
-  CreateMessagePage(FirebaseUser user) {
+  CreateMessagePage(FirebaseUser user, var youtubeUserData) {
     _CreateMessagePageState.user = user;
+    _CreateMessagePageState.youtubeUserId = youtubeUserData["id"];
   }
 }
 
 class _CreateMessagePageState extends State<CreateMessagePage> {
   static FirebaseUser user;
+  static String youtubeUserId;
   static String _message;
 
   void _handleMessage(String e) {
@@ -426,7 +433,11 @@ class _CreateMessagePageState extends State<CreateMessagePage> {
                 //   final url = "https://eca9kh6oqe.execute-api.ap-northeast-1.amazonaws.com/default/kosan_syoumei_create?device=$_deviceId&from_name=$_fromName&to_name=$_toName&memo=$_memo";
                 //   await http.get(url);
                 // }
-                // createCertificate();
+                // createCertificate()
+                Firestore.instance.collection("post").add({
+                  "message": _message,
+                  "userYoutubeId": youtubeUserId,
+                });
                 Navigator.of(context).pop();
               },
             ),
