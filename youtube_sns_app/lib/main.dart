@@ -217,7 +217,7 @@ class _LoginPageState extends State<LoginPage> {
           //まだfirestoreにyoutubeアカウントがuserとして登録されていない場合、userを登録。
           Firestore.instance.collection("users").add({
             "name": youtubeData["snippet"]["title"],
-            "id": youtubeData["id"]
+            "id": youtubeData["id"],
           });
         }
         for (var document in data.documents) {
