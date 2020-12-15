@@ -26,13 +26,13 @@
 //         // closer together (more dense) than on mobile platforms.
 //         visualDensity: VisualDensity.adaptivePlatformDensity,
 //       ),
-//       home: MyHomePage(title: 'Flutter Demo Home Page'),
+//       home: LoginPage(title: 'Flutter Demo Home Page'),
 //     );
 //   }
 // }
 //
-// class MyHomePage extends StatefulWidget {
-//   MyHomePage({Key key, this.title}) : super(key: key);
+// class LoginPage extends StatefulWidget {
+//   LoginPage({Key key, this.title}) : super(key: key);
 //
 //   // This widget is the home page of your application. It is stateful, meaning
 //   // that it has a State object (defined below) that contains fields that affect
@@ -46,10 +46,10 @@
 //   final String title;
 //
 //   @override
-//   _MyHomePageState createState() => _MyHomePageState();
+//   _LoginPageState createState() => _LoginPageState();
 // }
 //
-// class _MyHomePageState extends State<MyHomePage> {
+// class _LoginPageState extends State<LoginPage> {
 //   int _counter = 0;
 //
 //   void _incrementCounter() {
@@ -73,7 +73,7 @@
 //     // than having to individually change instances of widgets.
 //     return Scaffold(
 //       appBar: AppBar(
-//         // Here we take the value from the MyHomePage object that was created by
+//         // Here we take the value from the LoginPage object that was created by
 //         // the App.build method, and use it to set our appbar title.
 //         title: Text(widget.title),
 //       ),
@@ -117,9 +117,12 @@
 // }
 
 
+// import 'dart:html';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -132,7 +135,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Youtube SNS',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -143,27 +146,29 @@ class MyApp extends StatelessWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.red,
         // This makes the visual density adapt to the platform that you run
         // the app on. For desktop platforms, the controls will be smaller and
         // closer together (more dense) than on mobile platforms.
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: LoginPage(title: 'Login Page'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+class LoginPage extends StatefulWidget {
+  LoginPage({Key key, this.title}) : super(key: key);
 
   final String title;
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _LoginPageState createState() => _LoginPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _LoginPageState extends State<LoginPage> {
+  var youtubeData;
+
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [
       "https://www.googleapis.com/auth/youtube"
@@ -200,6 +205,47 @@ class _MyHomePageState extends State<MyHomePage> {
       final response = await http.get(url);
       print("レスポンス");
       print(response.body);
+      print("Youtube uid");
+      // Youtubeチャンネルはこの時点で一個しか取れないので0番目を取得する。
+      youtubeData = jsonDecode(response.body)["items"][0];
+      print(youtubeData);
+
+
+      // TODO: LISTENじゃなくてもいい気がする。検討。
+      Firestore.instance.collection("users").where("id", isEqualTo: youtubeData["id"]).snapshots().listen((data) {
+        print("aaa");
+        print(data.documents.length);
+        if(data.documents.length == 0) {
+          //まだfirestoreにyoutubeアカウントがuserとして登録されていない場合、userを登録。
+          Firestore.instance.collection("users").add({
+            "name": youtubeData["snippet"]["title"],
+            "id": youtubeData["id"],
+          });
+        }
+        for (var document in data.documents) {
+          print(document.data);
+        }
+      });
+
+      final url2 = "https://developers.google.com/apis-explorer/#p/youtube/v3/youtube.subscriptions?part=id,snippet&mySubscribers=true&access_token="+ googleAuth.accessToken;
+      final response2 = await http.get(url2);
+      print("自分のチャンネル登録者");
+      print(response2.body);
+
+      final url3 = "https://developers.google.com/apis-explorer/#p/youtube/v3/youtube.subscriptions.list?part=snippet,contentDetails&mine=true";
+      final response3 = await http.get(url3);
+      print("自分がチャンネル登録してるチャンネル");
+      print(response3.body);
+
+      // Navigator.push(context, MaterialPageRoute(builder: (context) => TestList()));
+      final res = await Firestore.instance.collection('users').orderBy('createdAt', descending: true).snapshots().listen((data) {
+        // data.documents.forEach(data => print(data));
+        for (var document in data.documents) {
+          print(document.data);
+        }
+        print(data.documents);
+      });
+      print(res.toString());
 
       return user;
     } catch (e) {
@@ -208,11 +254,11 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void transitionNextPage(FirebaseUser user) {
+  void transitionMyPage(FirebaseUser user) {
     if (user == null) return;
 
     Navigator.push(context, MaterialPageRoute(builder: (context) =>
-        NextPage(userData: user)
+        MyPage(userData: user, youtubeUserData: youtubeData)
     ));
   }
 
@@ -231,7 +277,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 onPressed: () {
                   _handleSignIn()
                       .then((FirebaseUser user) =>
-                      transitionNextPage(user)
+                      transitionMyPage(user)
                   )
                       .catchError((e) => print(e));
                 },
@@ -243,24 +289,27 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class NextPage extends StatefulWidget {
+class MyPage extends StatefulWidget {
   FirebaseUser userData;
+  var youtubeUserData;
 
-  NextPage({Key key, this.userData}) : super(key: key);
+  MyPage({Key key, this.userData, this.youtubeUserData}) : super(key: key);
 
   @override
-  _NextPageState createState() => _NextPageState(userData);
+  _MyPageState createState() => _MyPageState(userData, youtubeUserData);
 }
 
-class _NextPageState extends State<NextPage> {
+class _MyPageState extends State<MyPage> {
   FirebaseUser userData;
+  var youtubeUserData;
   String name = "";
   String email;
   String photoUrl;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  _NextPageState(FirebaseUser userData) {
+  _MyPageState(FirebaseUser userData, youtubeUserData) {
     this.userData = userData;
+    this.youtubeUserData = youtubeUserData;
     this.name = userData.displayName;
     this.email = userData.email;
     this.photoUrl = userData.photoUrl;
@@ -292,7 +341,7 @@ class _NextPageState extends State<NextPage> {
                   fontSize: 24,
                 ),
               ),
-              Text(this.email,
+              Text("@" + this.youtubeUserData["id"],
                 style: TextStyle(
                   fontSize: 24,
                 ),
@@ -305,6 +354,122 @@ class _NextPageState extends State<NextPage> {
               ),
             ]),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => CreateMessagePage(userData, youtubeUserData)));
+        },
+        tooltip: 'Increment',
+        child: Icon(Icons.add),
+      )
     );
   }
 }
+
+class CreateMessagePage extends StatefulWidget {
+  @override
+  _CreateMessagePageState createState() => new _CreateMessagePageState();
+
+  CreateMessagePage(FirebaseUser user, var youtubeUserData) {
+    _CreateMessagePageState.user = user;
+    _CreateMessagePageState.youtubeUserId = youtubeUserData["id"];
+  }
+}
+
+class _CreateMessagePageState extends State<CreateMessagePage> {
+  static FirebaseUser user;
+  static String youtubeUserId;
+  static String _message;
+
+  void _handleMessage(String e) {
+    setState(() {
+      _message = e;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return new Scaffold(
+      appBar: new AppBar(
+        title: new Text("メッセージ投稿"),
+      ),
+      body: Center(
+        child: Column(
+          children: <Widget>[
+            Text("投稿内容",
+                style: TextStyle(
+                  color: Colors.grey
+                )),
+            new TextField(
+              enabled: true,
+              maxLength: 10,
+              maxLengthEnforced: false,
+              style: TextStyle(color: Colors.blueGrey),
+              cursorColor: Colors.red,
+              // decoration: InputDecoration(
+              //   enabledBorder: OutlineInputBorder(
+              //     borderSide: BorderSide(
+              //       color: Colors.red,
+              //     ),
+              //   ),
+              // ),
+              obscureText: false,
+              maxLines: 1,
+              onChanged: _handleMessage,
+            ),
+            RaisedButton(
+              child: Text(
+                  "投稿する",
+                style: TextStyle(
+                  color: Colors.white
+                ),
+              ),
+              color: Colors.red,
+              shape: BeveledRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
+              ),
+              onPressed: () {
+                // Future createCertificate() async {
+                //   _toName = await twitterUserShow(token, secret, _toName);
+                //   final url = "https://eca9kh6oqe.execute-api.ap-northeast-1.amazonaws.com/default/kosan_syoumei_create?device=$_deviceId&from_name=$_fromName&to_name=$_toName&memo=$_memo";
+                //   await http.get(url);
+                // }
+                // createCertificate()
+                Firestore.instance.collection("post").add({
+                  "message": _message,
+                  "userYoutubeId": youtubeUserId,
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+//
+// class TestList extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return StreamBuilder<QuerySnapshot>(
+//       stream: Firestore.instance.collection('users').snapshots(),
+//       builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+//         if (snapshot.hasError)
+//           return new Text('Error: ${snapshot.error}');
+//         switch (snapshot.connectionState) {
+//           case ConnectionState.waiting: return new Text('Loading...');
+//           default:
+//             return new ListView(
+//               children: snapshot.data.documents.map((DocumentSnapshot document) {
+//                 return new ListTile(
+//                   title: new Text("aa"),
+//                   subtitle: new Text("bb∂ß"),
+//                 );
+//               }).toList(),
+//             );
+//         }
+//       },
+//     );
+//   }
+// }
