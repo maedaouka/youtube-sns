@@ -26,13 +26,13 @@
 //         // closer together (more dense) than on mobile platforms.
 //         visualDensity: VisualDensity.adaptivePlatformDensity,
 //       ),
-//       home: MyHomePage(title: 'Flutter Demo Home Page'),
+//       home: LoginPage(title: 'Flutter Demo Home Page'),
 //     );
 //   }
 // }
 //
-// class MyHomePage extends StatefulWidget {
-//   MyHomePage({Key key, this.title}) : super(key: key);
+// class LoginPage extends StatefulWidget {
+//   LoginPage({Key key, this.title}) : super(key: key);
 //
 //   // This widget is the home page of your application. It is stateful, meaning
 //   // that it has a State object (defined below) that contains fields that affect
@@ -46,10 +46,10 @@
 //   final String title;
 //
 //   @override
-//   _MyHomePageState createState() => _MyHomePageState();
+//   _LoginPageState createState() => _LoginPageState();
 // }
 //
-// class _MyHomePageState extends State<MyHomePage> {
+// class _LoginPageState extends State<LoginPage> {
 //   int _counter = 0;
 //
 //   void _incrementCounter() {
@@ -73,7 +73,7 @@
 //     // than having to individually change instances of widgets.
 //     return Scaffold(
 //       appBar: AppBar(
-//         // Here we take the value from the MyHomePage object that was created by
+//         // Here we take the value from the LoginPage object that was created by
 //         // the App.build method, and use it to set our appbar title.
 //         title: Text(widget.title),
 //       ),
@@ -146,27 +146,27 @@ class MyApp extends StatelessWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.red,
         // This makes the visual density adapt to the platform that you run
         // the app on. For desktop platforms, the controls will be smaller and
         // closer together (more dense) than on mobile platforms.
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: LoginPage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+class LoginPage extends StatefulWidget {
+  LoginPage({Key key, this.title}) : super(key: key);
 
   final String title;
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _LoginPageState createState() => _LoginPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _LoginPageState extends State<LoginPage> {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [
       "https://www.googleapis.com/auth/youtube"
@@ -203,6 +203,27 @@ class _MyHomePageState extends State<MyHomePage> {
       final response = await http.get(url);
       print("レスポンス");
       print(response.body);
+      print("Youtube uid");
+      // Youtubeチャンネルはこの時点で一個しか取れないので0番目を取得する。
+      var youtubeData = jsonDecode(response.body)["items"][0];
+      print(youtubeData);
+
+
+      // TODO: LISTENじゃなくてもいい気がする。検討。
+      Firestore.instance.collection("users").where("id", isEqualTo: youtubeData["id"]).snapshots().listen((data) {
+        print("aaa");
+        print(data.documents.length);
+        if(data.documents.length == 0) {
+          //まだfirestoreにyoutubeアカウントがuserとして登録されていない場合、userを登録。
+          Firestore.instance.collection("users").add({
+            "name": youtubeData["snippet"]["title"],
+            "id": youtubeData["id"]
+          });
+        }
+        for (var document in data.documents) {
+          print(document.data);
+        }
+      });
 
       final url2 = "https://developers.google.com/apis-explorer/#p/youtube/v3/youtube.subscriptions?part=id,snippet&mySubscribers=true&access_token="+ googleAuth.accessToken;
       final response2 = await http.get(url2);
@@ -215,13 +236,12 @@ class _MyHomePageState extends State<MyHomePage> {
       print(response3.body);
 
       // Navigator.push(context, MaterialPageRoute(builder: (context) => TestList()));
-      final res = await Firestore.instance.collection('users').snapshots().listen((data) {
+      final res = await Firestore.instance.collection('users').orderBy('createdAt', descending: true).snapshots().listen((data) {
         // data.documents.forEach(data => print(data));
         for (var document in data.documents) {
           print(document.data);
         }
         print(data.documents);
-        print(data.documents[0].data);
       });
       print(res.toString());
 
@@ -329,9 +349,94 @@ class _MyPageState extends State<MyPage> {
               ),
             ]),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => CreateMessagePage(userData)));
+        },
+        tooltip: 'Increment',
+        child: Icon(Icons.add),
+      )
     );
   }
 }
+
+class CreateMessagePage extends StatefulWidget {
+  @override
+  _CreateMessagePageState createState() => new _CreateMessagePageState();
+
+  CreateMessagePage(FirebaseUser user) {
+    _CreateMessagePageState.user = user;
+  }
+}
+
+class _CreateMessagePageState extends State<CreateMessagePage> {
+  static FirebaseUser user;
+  static String _message;
+
+  void _handleMessage(String e) {
+    setState(() {
+      _message = e;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return new Scaffold(
+      appBar: new AppBar(
+        title: new Text("メッセージ投稿"),
+      ),
+      body: Center(
+        child: Column(
+          children: <Widget>[
+            Text("投稿内容",
+                style: TextStyle(
+                  color: Colors.grey
+                )),
+            new TextField(
+              enabled: true,
+              maxLength: 10,
+              maxLengthEnforced: false,
+              style: TextStyle(color: Colors.blueGrey),
+              cursorColor: Colors.red,
+              // decoration: InputDecoration(
+              //   enabledBorder: OutlineInputBorder(
+              //     borderSide: BorderSide(
+              //       color: Colors.red,
+              //     ),
+              //   ),
+              // ),
+              obscureText: false,
+              maxLines: 1,
+              onChanged: _handleMessage,
+            ),
+            RaisedButton(
+              child: Text(
+                  "投稿する",
+                style: TextStyle(
+                  color: Colors.white
+                ),
+              ),
+              color: Colors.red,
+              shape: BeveledRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
+              ),
+              onPressed: () {
+                // Future createCertificate() async {
+                //   _toName = await twitterUserShow(token, secret, _toName);
+                //   final url = "https://eca9kh6oqe.execute-api.ap-northeast-1.amazonaws.com/default/kosan_syoumei_create?device=$_deviceId&from_name=$_fromName&to_name=$_toName&memo=$_memo";
+                //   await http.get(url);
+                // }
+                // createCertificate();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 //
 // class TestList extends StatelessWidget {
 //   @override
