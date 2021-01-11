@@ -1,123 +1,4 @@
-// import 'package:flutter/material.dart';
-//
-// void main() {
-//   runApp(MyApp());
-// }
-//
-// class MyApp extends StatelessWidget {
-//   // This widget is the root of your application.
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       title: 'Flutter Demo',
-//       theme: ThemeData(
-//         // This is the theme of your application.
-//         //
-//         // Try running your application with "flutter run". You'll see the
-//         // application has a blue toolbar. Then, without quitting the app, try
-//         // changing the primarySwatch below to Colors.green and then invoke
-//         // "hot reload" (press "r" in the console where you ran "flutter run",
-//         // or simply save your changes to "hot reload" in a Flutter IDE).
-//         // Notice that the counter didn't reset back to zero; the application
-//         // is not restarted.
-//         primarySwatch: Colors.blue,
-//         // This makes the visual density adapt to the platform that you run
-//         // the app on. For desktop platforms, the controls will be smaller and
-//         // closer together (more dense) than on mobile platforms.
-//         visualDensity: VisualDensity.adaptivePlatformDensity,
-//       ),
-//       home: LoginPage(title: 'Flutter Demo Home Page'),
-//     );
-//   }
-// }
-//
-// class LoginPage extends StatefulWidget {
-//   LoginPage({Key key, this.title}) : super(key: key);
-//
-//   // This widget is the home page of your application. It is stateful, meaning
-//   // that it has a State object (defined below) that contains fields that affect
-//   // how it looks.
-//
-//   // This class is the configuration for the state. It holds the values (in this
-//   // case the title) provided by the parent (in this case the App widget) and
-//   // used by the build method of the State. Fields in a Widget subclass are
-//   // always marked "final".
-//
-//   final String title;
-//
-//   @override
-//   _LoginPageState createState() => _LoginPageState();
-// }
-//
-// class _LoginPageState extends State<LoginPage> {
-//   int _counter = 0;
-//
-//   void _incrementCounter() {
-//     setState(() {
-//       // This call to setState tells the Flutter framework that something has
-//       // changed in this State, which causes it to rerun the build method below
-//       // so that the display can reflect the updated values. If we changed
-//       // _counter without calling setState(), then the build method would not be
-//       // called again, and so nothing would appear to happen.
-//       _counter++;
-//     });
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     // This method is rerun every time setState is called, for instance as done
-//     // by the _incrementCounter method above.
-//     //
-//     // The Flutter framework has been optimized to make rerunning build methods
-//     // fast, so that you can just rebuild anything that needs updating rather
-//     // than having to individually change instances of widgets.
-//     return Scaffold(
-//       appBar: AppBar(
-//         // Here we take the value from the LoginPage object that was created by
-//         // the App.build method, and use it to set our appbar title.
-//         title: Text(widget.title),
-//       ),
-//       body: Center(
-//         // Center is a layout widget. It takes a single child and positions it
-//         // in the middle of the parent.
-//         child: Column(
-//           // Column is also a layout widget. It takes a list of children and
-//           // arranges them vertically. By default, it sizes itself to fit its
-//           // children horizontally, and tries to be as tall as its parent.
-//           //
-//           // Invoke "debug painting" (press "p" in the console, choose the
-//           // "Toggle Debug Paint" action from the Flutter Inspector in Android
-//           // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-//           // to see the wireframe for each widget.
-//           //
-//           // Column has various properties to control how it sizes itself and
-//           // how it positions its children. Here we use mainAxisAlignment to
-//           // center the children vertically; the main axis here is the vertical
-//           // axis because Columns are vertical (the cross axis would be
-//           // horizontal).
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: <Widget>[
-//             Text(
-//               'You have pushed the button this many times:',
-//             ),
-//             Text(
-//               '$_counter',
-//               style: Theme.of(context).textTheme.headline4,
-//             ),
-//           ],
-//         ),
-//       ),
-//       floatingActionButton: FloatingActionButton(
-//         onPressed: _incrementCounter,
-//         tooltip: 'Increment',
-//         child: Icon(Icons.add),
-//       ), // This trailing comma makes auto-formatting nicer for build methods.
-//     );
-//   }
-// }
-
-
-// import 'dart:html';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -125,6 +6,11 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'footer.dart';
+
+var userDataGrobal;
+var youtubeUserDataGrobal;
+var messegeListGrobal = [];
 
 void main() {
   runApp(MyApp());
@@ -191,6 +77,7 @@ class _LoginPageState extends State<LoginPage> {
       final FirebaseUser user = (await _auth.signInWithCredential(credential)).user;
       print("signed in " + user.displayName);
       print("user");
+
       print(user);
       print("google auth");
       print(googleAuth.accessToken);
@@ -208,6 +95,7 @@ class _LoginPageState extends State<LoginPage> {
       print("Youtube uid");
       // Youtubeチャンネルはこの時点で一個しか取れないので0番目を取得する。
       youtubeData = jsonDecode(response.body)["items"][0];
+      print(youtubeData.runtimeType);
       print(youtubeData);
 
 
@@ -227,25 +115,28 @@ class _LoginPageState extends State<LoginPage> {
         }
       });
 
-      final url2 = "https://developers.google.com/apis-explorer/#p/youtube/v3/youtube.subscriptions?part=id,snippet&mySubscribers=true&access_token="+ googleAuth.accessToken;
-      final response2 = await http.get(url2);
-      print("自分のチャンネル登録者");
-      print(response2.body);
+      // final url2 = "https://developers.google.com/apis-explorer/#p/youtube/v3/youtube.subscriptions?part=id,snippet&mySubscribers=true&access_token="+ googleAuth.accessToken;
+      // final response2 = await http.get(url2);
+      // print("自分のチャンネル登録者");
+      // print(response2.body);
 
-      final url3 = "https://developers.google.com/apis-explorer/#p/youtube/v3/youtube.subscriptions.list?part=snippet,contentDetails&mine=true";
+      final url3 = "https://www.googleapis.com/youtube/v3/subscriptions?part=id,channelId&access_token="+ googleAuth.accessToken;
+      print("url");
+      print(url3);
       final response3 = await http.get(url3);
       print("自分がチャンネル登録してるチャンネル");
-      print(response3.body);
+      print(youtubeData = jsonDecode(response.body)["items"]);
+      print("３おわ");
 
       // Navigator.push(context, MaterialPageRoute(builder: (context) => TestList()));
       final res = await Firestore.instance.collection('users').orderBy('createdAt', descending: true).snapshots().listen((data) {
-        // data.documents.forEach(data => print(data));
         for (var document in data.documents) {
           print(document.data);
         }
         print(data.documents);
       });
       print(res.toString());
+
 
       return user;
     } catch (e) {
@@ -257,8 +148,12 @@ class _LoginPageState extends State<LoginPage> {
   void transitionMyPage(FirebaseUser user) {
     if (user == null) return;
 
+    print("user");
+    print(user);
+    print("youtubeData");
+    print(youtubeData);
     Navigator.push(context, MaterialPageRoute(builder: (context) =>
-        MyPage(userData: user, youtubeUserData: youtubeData)
+        MyPage(userData: user, youtubeUserData: youtubeData[0])
     ));
   }
 
@@ -313,6 +208,9 @@ class _MyPageState extends State<MyPage> {
     this.name = userData.displayName;
     this.email = userData.email;
     this.photoUrl = userData.photoUrl;
+
+    userDataGrobal = userData;
+    youtubeUserDataGrobal = youtubeUserData;
   }
 
   Future<void> _handleSignOut() async {
@@ -341,10 +239,29 @@ class _MyPageState extends State<MyPage> {
                   fontSize: 24,
                 ),
               ),
-              Text("@" + this.youtubeUserData["id"],
+              Text("@" + this.youtubeUserData['id'],
                 style: TextStyle(
                   fontSize: 24,
                 ),
+              ),
+              RaisedButton(
+                child: Text('timeline'),
+                onPressed: () {
+                  var messageList = [];
+
+                  Firestore.instance.collection("post").where("userYoutubeId", isEqualTo: youtubeUserData["id"]).snapshots().listen((data) {
+                    print("aaa");
+                    print(data.documents.length);
+                    for (var document in data.documents) {
+                      print(document.data);
+                      messageList.add(document.data);
+                    }
+                  });
+                  print("メッセージリスト");
+                  print("メッセージリスト");
+                  print(messageList);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => TimelinePage(userData, youtubeUserData, messageList)));
+                },
               ),
               RaisedButton(
                 child: Text('Sign Out Google'),
@@ -354,7 +271,8 @@ class _MyPageState extends State<MyPage> {
               ),
             ]),
       ),
-      floatingActionButton: FloatingActionButton(
+        bottomNavigationBar: Footer(userData, youtubeUserData),
+        floatingActionButton: FloatingActionButton(
         onPressed: () async {
           Navigator.push(context, MaterialPageRoute(builder: (context) => CreateMessagePage(userData, youtubeUserData)));
         },
@@ -372,11 +290,13 @@ class CreateMessagePage extends StatefulWidget {
   CreateMessagePage(FirebaseUser user, var youtubeUserData) {
     _CreateMessagePageState.user = user;
     _CreateMessagePageState.youtubeUserId = youtubeUserData["id"];
+    _CreateMessagePageState.youtubeUser = youtubeUserData;
   }
 }
 
 class _CreateMessagePageState extends State<CreateMessagePage> {
   static FirebaseUser user;
+  static Map youtubeUser;
   static String youtubeUserId;
   static String _message;
 
@@ -428,15 +348,10 @@ class _CreateMessagePageState extends State<CreateMessagePage> {
                 borderRadius: BorderRadius.circular(10.0),
               ),
               onPressed: () {
-                // Future createCertificate() async {
-                //   _toName = await twitterUserShow(token, secret, _toName);
-                //   final url = "https://eca9kh6oqe.execute-api.ap-northeast-1.amazonaws.com/default/kosan_syoumei_create?device=$_deviceId&from_name=$_fromName&to_name=$_toName&memo=$_memo";
-                //   await http.get(url);
-                // }
-                // createCertificate()
                 Firestore.instance.collection("post").add({
                   "message": _message,
                   "userYoutubeId": youtubeUserId,
+                  "createdAt": FieldValue.serverTimestamp()
                 });
                 Navigator.of(context).pop();
               },
@@ -444,32 +359,85 @@ class _CreateMessagePageState extends State<CreateMessagePage> {
           ],
         ),
       ),
+        bottomNavigationBar: Footer(user, youtubeUser)
     );
   }
 }
 
-//
-// class TestList extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return StreamBuilder<QuerySnapshot>(
-//       stream: Firestore.instance.collection('users').snapshots(),
-//       builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-//         if (snapshot.hasError)
-//           return new Text('Error: ${snapshot.error}');
-//         switch (snapshot.connectionState) {
-//           case ConnectionState.waiting: return new Text('Loading...');
-//           default:
-//             return new ListView(
-//               children: snapshot.data.documents.map((DocumentSnapshot document) {
-//                 return new ListTile(
-//                   title: new Text("aa"),
-//                   subtitle: new Text("bb∂ß"),
-//                 );
-//               }).toList(),
-//             );
-//         }
-//       },
-//     );
-//   }
-// }
+class TimelinePage extends StatefulWidget {
+
+  @override
+  _TimelinePageState createState() => new _TimelinePageState();
+
+  TimelinePage(FirebaseUser user, var youtubeUserData, var messageList) {
+    _TimelinePageState.user = user;
+    _TimelinePageState.youtubeUser = youtubeUserData;
+    _TimelinePageState.messageList = messageList;
+
+    print("タイムライン表示");
+    Firestore.instance.collection("post").orderBy('createdAt', descending: true).snapshots().listen((data) {
+      for (var document in data.documents) {
+        print(document.data);
+      }
+      print(data.documents);
+    });
+    Firestore.instance.collection("post").where("userYoutubeId", isEqualTo: youtubeUserData["id"]).orderBy('createdAt', descending: true).snapshots().listen((data) {
+      _TimelinePageState.messageList = [];
+      print("aaa");
+      print(data.documents.length);
+      for (var document in data.documents) {
+        print(document.data);
+        _TimelinePageState.messageList.add(document.data);
+        messegeListGrobal.add(document.data);
+        print(_TimelinePageState.messageList);
+      }
+    });
+  }
+}
+
+class _TimelinePageState extends State<TimelinePage> {
+  static FirebaseUser user;
+  static Map youtubeUser;
+  static String youtubeUserId;
+  static List messageList = [];
+
+  @override
+  Widget build(BuildContext context) {
+    return new Scaffold(
+      appBar: new AppBar(
+        title: new Text("タイムライン"),
+      ),
+      body: ListView(children: List.generate(messageList.length, (index) {
+        return InkWell(
+          onTap: () {
+            print("tap message");
+          },
+          child: Card(
+            child: Column(
+              children: <Widget>[
+                Container(
+                    margin: EdgeInsets.all(10.0),
+                    child: ListTile(
+                      title: Text(messageList[index]["message"].toString()),
+                      leading: Icon(Icons.people),
+                      subtitle: Text("@" + messageList[index]["userYoutubeId"].toString()),
+                    )
+                )
+              ],
+            ),
+          ),
+        );
+      })
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          Navigator.push(context, MaterialPageRoute(builder: (context) =>
+              CreateMessagePage(user, youtubeUser)));
+        },
+        tooltip: 'Increment',
+        child: Icon(Icons.add),
+      ),
+        bottomNavigationBar: Footer(user, youtubeUser)
+    );
+  }
+}
