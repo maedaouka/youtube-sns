@@ -11,6 +11,7 @@ import 'footer.dart';
 var userDataGrobal;
 var youtubeUserDataGrobal;
 var messegeListGrobal = [];
+var followListGrobal = [];
 
 void main() {
   runApp(MyApp());
@@ -54,6 +55,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   var youtubeData;
+  var followListJson;
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [
@@ -81,9 +83,6 @@ class _LoginPageState extends State<LoginPage> {
       print(user);
       print("google auth");
       print(googleAuth.accessToken);
-
-      // final url = "https://www.googleapis.com/youtube/v3/videos?id=7lCDEYXw3mM&key=AIzaSyCpPTlS1qzJkCFQ9OJEe7oNGwx4KYoIHEI&part=snippet,contentDetails,statistics,status";
-      // final url = "https://www.googleapis.com/youtube/v3/channels?key=AIzaSyCpPTlS1qzJkCFQ9OJEe7oNGwx4KYoIHEI&part=id&id=1";
 
       //TODO: 不要かどうか別のGoogleアカウントで　確認。 おそらく不要。
       // final response1 = await http.get("https://www.googleapis.com/auth/youtube.force-ssl");
@@ -115,18 +114,28 @@ class _LoginPageState extends State<LoginPage> {
         }
       });
 
-      // final url2 = "https://developers.google.com/apis-explorer/#p/youtube/v3/youtube.subscriptions?part=id,snippet&mySubscribers=true&access_token="+ googleAuth.accessToken;
-      // final response2 = await http.get(url2);
-      // print("自分のチャンネル登録者");
-      // print(response2.body);
-
-      final url3 = "https://www.googleapis.com/youtube/v3/subscriptions?part=id,channelId&access_token="+ googleAuth.accessToken;
+      final url3 = "https://www.googleapis.com/youtube/v3/subscriptions?part=id,snippet&mine=true&maxResults=50&access_token="+ googleAuth.accessToken;
       print("url");
       print(url3);
-      final response3 = await http.get(url3);
+      final response2 = await http.get(url3);
       print("自分がチャンネル登録してるチャンネル");
-      print(youtubeData = jsonDecode(response.body)["items"]);
+      print(followListJson = followListJson);
+
+      var followList = [];
+      var i=0;
+      for (int i = 0; i < 50; i++) {
+        var followUser = jsonDecode(response2.body)["items"][i];
+        try {
+          followListGrobal.add({"title": followUser["snippet"]["title"], "channelId": followUser["snippet"]["channelId"], "photo": followUser["snippet"]["thumbnails"]["default"]["url"]});
+          print(jsonDecode(response2.body)["items"][i]["snippet"]["title"]);
+        } on RangeError catch(e) {
+          break;
+        }
+      }
+      print(followListGrobal);
       print("３おわ");
+
+      print(youtubeData = jsonDecode(response.body)["items"]);
 
       // Navigator.push(context, MaterialPageRoute(builder: (context) => TestList()));
       final res = await Firestore.instance.collection('users').orderBy('createdAt', descending: true).snapshots().listen((data) {
@@ -257,8 +266,6 @@ class _MyPageState extends State<MyPage> {
                       messageList.add(document.data);
                     }
                   });
-                  print("メッセージリスト");
-                  print("メッセージリスト");
                   print(messageList);
                   Navigator.push(context, MaterialPageRoute(builder: (context) => TimelinePage(userData, youtubeUserData, messageList)));
                 },
