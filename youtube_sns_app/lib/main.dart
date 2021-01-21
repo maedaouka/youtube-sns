@@ -12,6 +12,8 @@ var userDataGrobal;
 var youtubeUserDataGrobal;
 var messegeListGrobal = [];
 var followListGrobal = [];
+var followListTitleGrobal = {};
+var followListPhotoGrobal = {};
 
 void main() {
   runApp(MyApp());
@@ -95,12 +97,16 @@ class _LoginPageState extends State<LoginPage> {
       // Youtubeチャンネルはこの時点で一個しか取れないので0番目を取得する。
       youtubeData = jsonDecode(response.body)["items"][0];
       print(youtubeData.runtimeType);
+      print("youtubeユーザーデータ");
       print(youtubeData);
+
+      followListGrobal.add(youtubeData["id"]);
+      followListTitleGrobal[youtubeData["id"]] = youtubeData["snippet"]["title"];
+      followListPhotoGrobal[youtubeData["id"]] = youtubeData["snippet"]["thumbnails"]["default"]["url"];
 
 
       // TODO: LISTENじゃなくてもいい気がする。検討。
       Firestore.instance.collection("users").where("id", isEqualTo: youtubeData["id"]).snapshots().listen((data) {
-        print("aaa");
         print(data.documents.length);
         if(data.documents.length == 0) {
           //まだfirestoreにyoutubeアカウントがuserとして登録されていない場合、userを登録。
@@ -114,30 +120,56 @@ class _LoginPageState extends State<LoginPage> {
         }
       });
 
-      final url3 = "https://www.googleapis.com/youtube/v3/subscriptions?part=id,snippet&mine=true&maxResults=50&access_token="+ googleAuth.accessToken;
+      final url2 = "https://www.googleapis.com/youtube/v3/subscriptions?part=id,snippet&mine=true&maxResults=50&access_token="+ googleAuth.accessToken;
       print("url");
-      print(url3);
-      final response2 = await http.get(url3);
+      print(url2);
+      var response2 = await http.get(url2);
       print("自分がチャンネル登録してるチャンネル");
-      print(followListJson = followListJson);
 
       var followList = [];
       var i=0;
+
+      var testMap = {};
+
       for (int i = 0; i < 50; i++) {
-        var followUser = jsonDecode(response2.body)["items"][i];
+        var j=0;
+
+        print(i);
+
         try {
-          followListGrobal.add({"title": followUser["snippet"]["title"], "channelId": followUser["snippet"]["channelId"], "photo": followUser["snippet"]["thumbnails"]["default"]["url"]});
-          print(jsonDecode(response2.body)["items"][i]["snippet"]["title"]);
+          var followUser = jsonDecode(response2.body)["items"][i+j];
+
+          followListGrobal.add(followUser["snippet"]["resourceId"]["channelId"]);
+
+          followListTitleGrobal[followUser["snippet"]["resourceId"]["channelId"]] = followUser["snippet"]["title"];
+          followListPhotoGrobal[followUser["snippet"]["resourceId"]["channelId"]] = followUser["snippet"]["thumbnails"]["default"]["url"];
+
+          print(followUser["snippet"]["title"]);
         } on RangeError catch(e) {
           break;
         }
+        if(i==49) {
+          j += 50;
+          if(j < jsonDecode(response2.body)["pageInfo"]["totalResults"]) {
+            response2 = await http.get("https://www.googleapis.com/youtube/v3/subscriptions?part=id,snippet&pageToken="+ jsonDecode(response2.body)["nextPageToken"] +"&mine=true&maxResults=50&access_token="+ googleAuth.accessToken);
+            i = 0;
+          }
+        }
+
       }
+      print("follow list");
       print(followListGrobal);
+
+      print("title list");
+      print(followListTitleGrobal);
+
+      print("url list");
+      print(followListPhotoGrobal);
+
       print("３おわ");
 
       print(youtubeData = jsonDecode(response.body)["items"]);
 
-      // Navigator.push(context, MaterialPageRoute(builder: (context) => TestList()));
       final res = await Firestore.instance.collection('users').orderBy('createdAt', descending: true).snapshots().listen((data) {
         for (var document in data.documents) {
           print(document.data);
@@ -258,8 +290,7 @@ class _MyPageState extends State<MyPage> {
                 onPressed: () {
                   var messageList = [];
 
-                  Firestore.instance.collection("post").where("userYoutubeId", isEqualTo: youtubeUserData["id"]).snapshots().listen((data) {
-                    print("aaa");
+                  Firestore.instance.collection("post").snapshots().listen((data) {
                     print(data.documents.length);
                     for (var document in data.documents) {
                       print(document.data);
@@ -332,13 +363,6 @@ class _CreateMessagePageState extends State<CreateMessagePage> {
               maxLengthEnforced: false,
               style: TextStyle(color: Colors.blueGrey),
               cursorColor: Colors.red,
-              // decoration: InputDecoration(
-              //   enabledBorder: OutlineInputBorder(
-              //     borderSide: BorderSide(
-              //       color: Colors.red,
-              //     ),
-              //   ),
-              // ),
               obscureText: false,
               maxLines: 1,
               onChanged: _handleMessage,
@@ -388,15 +412,17 @@ class TimelinePage extends StatefulWidget {
       }
       print(data.documents);
     });
-    Firestore.instance.collection("post").where("userYoutubeId", isEqualTo: youtubeUserData["id"]).orderBy('createdAt', descending: true).snapshots().listen((data) {
+    Firestore.instance.collection("post").orderBy('createdAt', descending: true).snapshots().listen((data) {
       _TimelinePageState.messageList = [];
-      print("aaa");
       print(data.documents.length);
       for (var document in data.documents) {
-        print(document.data);
-        _TimelinePageState.messageList.add(document.data);
-        messegeListGrobal.add(document.data);
-        print(_TimelinePageState.messageList);
+        // もしフォローリストに居るアカウントだったらタイムラインようのリストにメッセージを追加する。
+        if (followListGrobal.contains(document.data["userYoutubeId"].toString())) {
+          print(document.data);
+          _TimelinePageState.messageList.add(document.data);
+          messegeListGrobal.add(document.data);
+          print(_TimelinePageState.messageList);
+        }
       }
     });
   }
@@ -425,9 +451,12 @@ class _TimelinePageState extends State<TimelinePage> {
                 Container(
                     margin: EdgeInsets.all(10.0),
                     child: ListTile(
-                      title: Text(messageList[index]["message"].toString()),
-                      leading: Icon(Icons.people),
-                      subtitle: Text("@" + messageList[index]["userYoutubeId"].toString()),
+                      // title: Text(messageList[index]["message"].toString()),
+                      // leading: Icon(Icons.people),
+                      // subtitle: Text("@" + messageList[index]["userYoutubeId"].toString()),
+                      title: Text(followListTitleGrobal[messageList[index]["userYoutubeId"].toString()]),
+                      leading: Image.network(followListPhotoGrobal[messageList[index]["userYoutubeId"]]),
+                      subtitle: Text(messageList[index]["message"].toString()),
                     )
                 )
               ],
