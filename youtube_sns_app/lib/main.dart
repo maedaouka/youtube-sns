@@ -194,7 +194,7 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               RaisedButton(
-                child: Text('Sign in Google'),
+                child: Text('Sign in Youtube'),
                 onPressed: () {
                   _handleSignIn()
                       .then((FirebaseUser user) =>
@@ -271,7 +271,7 @@ class _MyPageState extends State<MyPage> {
                 ),
               ),
               RaisedButton(
-                child: Text('Sign Out Google'),
+                child: Text('Sign Out Youtube'),
                 onPressed: () {
                   _handleSignOut().catchError((e) => print(e));
                 },
