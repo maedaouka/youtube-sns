@@ -25,9 +25,6 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
-// Add the following line:
-apply plugin: 'com.google.gms.google-services'  // Google Services plugin
-
 android {
     compileSdkVersion 28
 
@@ -46,7 +43,6 @@ android {
         targetSdkVersion 28
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
-        multiDexEnabled true
     }
 
     buildTypes {
