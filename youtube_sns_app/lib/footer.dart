@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'main.dart';
 
+var footerSelectedIndexGlobal = 0;
 class Footer extends StatefulWidget{
   FirebaseUser userData;
   var youtubeUserData;
@@ -14,8 +15,6 @@ class Footer extends StatefulWidget{
 
   @override
   _Footer createState() => _Footer(userData, youtubeUserData);
-  // _Footer createState() => ;
-
 
   updateData(FirebaseUser userData, Map youtubeUserData) {
     _footer.setState(() {
@@ -54,9 +53,13 @@ class _Footer extends State<Footer> {
   @override
   void initState() {
     super.initState();
-    _bottomNavigationBarItems.add(_UpdateActiveState(0));
-    for ( var i = 1; i < _footerItemNames.length; i++) {
-      _bottomNavigationBarItems.add(_UpdateDeactiveState(i));
+
+    for ( var i = 0; i < _footerItemNames.length; i++) {
+      if(i == footerSelectedIndexGlobal) {
+        _bottomNavigationBarItems.add(_UpdateActiveState(i));
+      } else {
+        _bottomNavigationBarItems.add(_UpdateDeactiveState(i));
+      }
     }
   }
 
@@ -95,24 +98,23 @@ class _Footer extends State<Footer> {
 
   void _onItemTapped(int index) {
     setState(() {
-      _bottomNavigationBarItems[_selectedIndex] = _UpdateDeactiveState(_selectedIndex);
       _bottomNavigationBarItems[index] = _UpdateActiveState(index);
-      _selectedIndex = index;
+      footerSelectedIndexGlobal = index;
 
-      print(_selectedIndex);
+      print(footerSelectedIndexGlobal);
 
-      if(_selectedIndex == 0) {
+      if(footerSelectedIndexGlobal == 0) {
         print("ユーザーデータ");
         print(userData);
         print("Youtubeユーザーデータ");
         print(youtubeUserData);
-        Navigator.pop(context);
-        Navigator.push(context, MaterialPageRoute(builder: (context) => MyPage(userData: userDataGrobal, youtubeUserData: youtubeUserDataGrobal)));
-      } else if(_selectedIndex == 1) {
-        Navigator.pop(context);
-        Navigator.push(context, MaterialPageRoute(builder: (context) => TimelinePage(userDataGrobal, youtubeUserDataGrobal, messegeListGrobal)));
+        // Navigator.pop(context);
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => MyPage(userData: userDataGrobal, youtubeUserData: youtubeUserDataGrobal)));
+      } else if(footerSelectedIndexGlobal == 1) {
+        // Navigator.pop(context);
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => TimelinePage(userDataGrobal, youtubeUserDataGrobal, messegeListGrobal)));
       }
-      print(_selectedIndex);
+      print(footerSelectedIndexGlobal);
     });
   }
 
@@ -121,7 +123,7 @@ class _Footer extends State<Footer> {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed, // これを書かないと3つまでしか表示されない
       items: _bottomNavigationBarItems,
-      currentIndex: _selectedIndex,
+      currentIndex: footerSelectedIndexGlobal,
       onTap: _onItemTapped,
     );
   }

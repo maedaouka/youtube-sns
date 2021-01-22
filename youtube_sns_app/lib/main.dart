@@ -126,11 +126,6 @@ class _LoginPageState extends State<LoginPage> {
       var response2 = await http.get(url2);
       print("自分がチャンネル登録してるチャンネル");
 
-      var followList = [];
-      var i=0;
-
-      var testMap = {};
-
       for (int i = 0; i < 50; i++) {
         var j=0;
 
@@ -140,7 +135,6 @@ class _LoginPageState extends State<LoginPage> {
           var followUser = jsonDecode(response2.body)["items"][i+j];
 
           followListGrobal.add(followUser["snippet"]["resourceId"]["channelId"]);
-
           followListTitleGrobal[followUser["snippet"]["resourceId"]["channelId"]] = followUser["snippet"]["title"];
           followListPhotoGrobal[followUser["snippet"]["resourceId"]["channelId"]] = followUser["snippet"]["thumbnails"]["default"]["url"];
 
@@ -169,16 +163,7 @@ class _LoginPageState extends State<LoginPage> {
       print("３おわ");
 
       print(youtubeData = jsonDecode(response.body)["items"]);
-
-      final res = await Firestore.instance.collection('users').orderBy('createdAt', descending: true).snapshots().listen((data) {
-        for (var document in data.documents) {
-          print(document.data);
-        }
-        print(data.documents);
-      });
-      print(res.toString());
-
-
+      
       return user;
     } catch (e) {
       print(e);
@@ -193,7 +178,7 @@ class _LoginPageState extends State<LoginPage> {
     print(user);
     print("youtubeData");
     print(youtubeData);
-    Navigator.push(context, MaterialPageRoute(builder: (context) =>
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>
         MyPage(userData: user, youtubeUserData: youtubeData[0])
     ));
   }
@@ -284,22 +269,6 @@ class _MyPageState extends State<MyPage> {
                 style: TextStyle(
                   fontSize: 24,
                 ),
-              ),
-              RaisedButton(
-                child: Text('timeline'),
-                onPressed: () {
-                  var messageList = [];
-
-                  Firestore.instance.collection("post").snapshots().listen((data) {
-                    print(data.documents.length);
-                    for (var document in data.documents) {
-                      print(document.data);
-                      messageList.add(document.data);
-                    }
-                  });
-                  print(messageList);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => TimelinePage(userData, youtubeUserData, messageList)));
-                },
               ),
               RaisedButton(
                 child: Text('Sign Out Google'),
@@ -407,13 +376,8 @@ class TimelinePage extends StatefulWidget {
 
     print("タイムライン表示");
     Firestore.instance.collection("post").orderBy('createdAt', descending: true).snapshots().listen((data) {
-      for (var document in data.documents) {
-        print(document.data);
-      }
-      print(data.documents);
-    });
-    Firestore.instance.collection("post").orderBy('createdAt', descending: true).snapshots().listen((data) {
       _TimelinePageState.messageList = [];
+      messegeListGrobal = [];
       print(data.documents.length);
       for (var document in data.documents) {
         // もしフォローリストに居るアカウントだったらタイムラインようのリストにメッセージを追加する。
@@ -451,10 +415,7 @@ class _TimelinePageState extends State<TimelinePage> {
                 Container(
                     margin: EdgeInsets.all(10.0),
                     child: ListTile(
-                      // title: Text(messageList[index]["message"].toString()),
-                      // leading: Icon(Icons.people),
-                      // subtitle: Text("@" + messageList[index]["userYoutubeId"].toString()),
-                      title: Text(followListTitleGrobal[messageList[index]["userYoutubeId"].toString()]),
+                      title: Text(followListTitleGrobal[messegeListGrobal[index]["userYoutubeId"].toString()]),
                       leading: Image.network(followListPhotoGrobal[messageList[index]["userYoutubeId"]]),
                       subtitle: Text(messageList[index]["message"].toString()),
                     )
@@ -467,7 +428,7 @@ class _TimelinePageState extends State<TimelinePage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          Navigator.push(context, MaterialPageRoute(builder: (context) =>
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>
               CreateMessagePage(user, youtubeUser)));
         },
         tooltip: 'Increment',
