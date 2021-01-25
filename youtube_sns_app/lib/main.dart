@@ -79,26 +79,15 @@ class _LoginPageState extends State<LoginPage> {
         idToken: googleAuth.idToken,
       );
       final FirebaseUser user = (await _auth.signInWithCredential(credential)).user;
-      print("signed in " + user.displayName);
-      print("user");
-
-      print(user);
-      print("google auth");
-      print(googleAuth.accessToken);
 
       //TODO: 不要かどうか別のGoogleアカウントで　確認。 おそらく不要。
-      // final response1 = await http.get("https://www.googleapis.com/auth/youtube.force-ssl");
+      await http.get("https://www.googleapis.com/auth/youtube.force-ssl");
 
-      final url = "https://www.googleapis.com/youtube/v3/channels?part=id,snippet,status&mine=true&access_token="+ googleAuth.accessToken;
-      final response = await http.get(url);
-      print("レスポンス");
-      print(response.body);
-      print("Youtube uid");
+      final myChannnelInfoUrl = "https://www.googleapis.com/youtube/v3/channels?part=id,snippet,status&mine=true&access_token="+ googleAuth.accessToken;
+      final myChannnelInfoResponse = await http.get(myChannnelInfoUrl);
+
       // Youtubeチャンネルはこの時点で一個しか取れないので0番目を取得する。
-      youtubeData = jsonDecode(response.body)["items"][0];
-      print(youtubeData.runtimeType);
-      print("youtubeユーザーデータ");
-      print(youtubeData);
+      youtubeData = jsonDecode(myChannnelInfoResponse.body)["items"][0];
 
       followListGrobal.add(youtubeData["id"]);
       followListTitleGrobal[youtubeData["id"]] = youtubeData["snippet"]["title"];
@@ -107,7 +96,6 @@ class _LoginPageState extends State<LoginPage> {
 
       // TODO: LISTENじゃなくてもいい気がする。検討。
       Firestore.instance.collection("users").where("id", isEqualTo: youtubeData["id"]).snapshots().listen((data) {
-        print(data.documents.length);
         if(data.documents.length == 0) {
           //まだfirestoreにyoutubeアカウントがuserとして登録されていない場合、userを登録。
           Firestore.instance.collection("users").add({
@@ -115,21 +103,13 @@ class _LoginPageState extends State<LoginPage> {
             "id": youtubeData["id"],
           });
         }
-        for (var document in data.documents) {
-          print(document.data);
-        }
       });
 
       final url2 = "https://www.googleapis.com/youtube/v3/subscriptions?part=id,snippet&mine=true&maxResults=50&access_token="+ googleAuth.accessToken;
-      print("url");
-      print(url2);
       var response2 = await http.get(url2);
-      print("自分がチャンネル登録してるチャンネル");
 
       for (int i = 0; i < 50; i++) {
         var j=0;
-
-        print(i);
 
         try {
           var followUser = jsonDecode(response2.body)["items"][i+j];
@@ -138,7 +118,6 @@ class _LoginPageState extends State<LoginPage> {
           followListTitleGrobal[followUser["snippet"]["resourceId"]["channelId"]] = followUser["snippet"]["title"];
           followListPhotoGrobal[followUser["snippet"]["resourceId"]["channelId"]] = followUser["snippet"]["thumbnails"]["default"]["url"];
 
-          print(followUser["snippet"]["title"]);
         } on RangeError catch(e) {
           break;
         }
@@ -151,19 +130,6 @@ class _LoginPageState extends State<LoginPage> {
         }
 
       }
-      print("follow list");
-      print(followListGrobal);
-
-      print("title list");
-      print(followListTitleGrobal);
-
-      print("url list");
-      print(followListPhotoGrobal);
-
-      print("３おわ");
-
-      print(youtubeData = jsonDecode(response.body)["items"]);
-      
       return user;
     } catch (e) {
       print(e);
@@ -174,10 +140,6 @@ class _LoginPageState extends State<LoginPage> {
   void transitionMyPage(FirebaseUser user) {
     if (user == null) return;
 
-    print("user");
-    print(user);
-    print("youtubeData");
-    print(youtubeData);
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>
         MyPage(userData: user, youtubeUserData: youtubeData[0])
     ));
@@ -374,18 +336,14 @@ class TimelinePage extends StatefulWidget {
     _TimelinePageState.youtubeUser = youtubeUserData;
     _TimelinePageState.messageList = messageList;
 
-    print("タイムライン表示");
     Firestore.instance.collection("post").orderBy('createdAt', descending: true).snapshots().listen((data) {
       _TimelinePageState.messageList = [];
       messegeListGrobal = [];
-      print(data.documents.length);
       for (var document in data.documents) {
         // もしフォローリストに居るアカウントだったらタイムラインようのリストにメッセージを追加する。
         if (followListGrobal.contains(document.data["userYoutubeId"].toString())) {
-          print(document.data);
           _TimelinePageState.messageList.add(document.data);
           messegeListGrobal.add(document.data);
-          print(_TimelinePageState.messageList);
         }
       }
     });
@@ -406,16 +364,13 @@ class _TimelinePageState extends State<TimelinePage> {
       ),
       body: ListView(children: List.generate(messageList.length, (index) {
         return InkWell(
-          onTap: () {
-            print("tap message");
-          },
           child: Card(
             child: Column(
               children: <Widget>[
                 Container(
                     margin: EdgeInsets.all(10.0),
                     child: ListTile(
-                      title: Text(followListTitleGrobal[messegeListGrobal[index]["userYoutubeId"].toString()]),
+                      title: Text(followListTitleGrobal[messegeListGrobal[index]["userYoutubeId"]]),
                       leading: Image.network(followListPhotoGrobal[messageList[index]["userYoutubeId"]]),
                       subtitle: Text(messageList[index]["message"].toString()),
                     )
