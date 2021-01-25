@@ -7,24 +7,16 @@ Youtubeアカウントを利用したSNSです。
 
 ## 構成
 
-firebaseを利用してtwitter認証でログイン
+firebaseを利用してGoogle(Youtube)認証でログイン
 
 　　　　　↓
 
-ログイン時に取得した情報からtwitterAPIを叩く。（応援相手を入力する際にAPIを叩いてユーザー情報を取得しています。）
+取得したYoutubeアカウントでAPIを叩いて、チャンネル登録しているユーザーの一覧を取得
 
 　　　　　↓
 
-AWSのAPIGateway　→　AWSのlambda →　QLDBアクセス
+チャンネル登録しているユーザーと自分の投稿内容をタイムラインに一覧表示
 
-
-lambda のコード
-
-作成
-https://github.com/maedaouka/lambda_kosan_syoumei_create
-
-一覧取得
-https://github.com/maedaouka/lambda_kosan_syoumei_mylist
 
 ## 環境構築
 flutterAppのインストール
