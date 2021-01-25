@@ -80,9 +80,6 @@ class _LoginPageState extends State<LoginPage> {
       );
       final FirebaseUser user = (await _auth.signInWithCredential(credential)).user;
 
-      //TODO: 不要かどうか別のGoogleアカウントで　確認。 おそらく不要。
-      // final response1 = await http.get("https://www.googleapis.com/auth/youtube.force-ssl");
-
       final url = "https://www.googleapis.com/youtube/v3/channels?part=id,snippet,status&mine=true&access_token="+ googleAuth.accessToken;
       final response = await http.get(url);
       // Youtubeチャンネルはこの時点で一個しか取れないので0番目を取得する。
@@ -92,7 +89,6 @@ class _LoginPageState extends State<LoginPage> {
       followListTitleGrobal[youtubeData["id"]] = youtubeData["snippet"]["title"];
       followListPhotoGrobal[youtubeData["id"]] = youtubeData["snippet"]["thumbnails"]["default"]["url"];
 
-      // TODO: LISTENじゃなくてもいい気がする。検討。
       Firestore.instance.collection("users").where("id", isEqualTo: youtubeData["id"]).snapshots().listen((data) {
         if(data.documents.length == 0) {
           //まだfirestoreにyoutubeアカウントがuserとして登録されていない場合、userを登録。
