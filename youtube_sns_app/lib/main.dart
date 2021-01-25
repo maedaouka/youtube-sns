@@ -81,18 +81,16 @@ class _LoginPageState extends State<LoginPage> {
       final FirebaseUser user = (await _auth.signInWithCredential(credential)).user;
 
       //TODO: 不要かどうか別のGoogleアカウントで　確認。 おそらく不要。
-      await http.get("https://www.googleapis.com/auth/youtube.force-ssl");
+      // final response1 = await http.get("https://www.googleapis.com/auth/youtube.force-ssl");
 
-      final myChannnelInfoUrl = "https://www.googleapis.com/youtube/v3/channels?part=id,snippet,status&mine=true&access_token="+ googleAuth.accessToken;
-      final myChannnelInfoResponse = await http.get(myChannnelInfoUrl);
-
+      final url = "https://www.googleapis.com/youtube/v3/channels?part=id,snippet,status&mine=true&access_token="+ googleAuth.accessToken;
+      final response = await http.get(url);
       // Youtubeチャンネルはこの時点で一個しか取れないので0番目を取得する。
-      youtubeData = jsonDecode(myChannnelInfoResponse.body)["items"][0];
+      youtubeData = jsonDecode(response.body)["items"][0];
 
       followListGrobal.add(youtubeData["id"]);
       followListTitleGrobal[youtubeData["id"]] = youtubeData["snippet"]["title"];
       followListPhotoGrobal[youtubeData["id"]] = youtubeData["snippet"]["thumbnails"]["default"]["url"];
-
 
       // TODO: LISTENじゃなくてもいい気がする。検討。
       Firestore.instance.collection("users").where("id", isEqualTo: youtubeData["id"]).snapshots().listen((data) {
@@ -130,6 +128,7 @@ class _LoginPageState extends State<LoginPage> {
         }
 
       }
+      youtubeData = jsonDecode(response.body)["items"];
       return user;
     } catch (e) {
       print(e);
@@ -156,7 +155,7 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               RaisedButton(
-                child: Text('Sign in Youtube'),
+                child: Text('Sign in Google'),
                 onPressed: () {
                   _handleSignIn()
                       .then((FirebaseUser user) =>
@@ -208,7 +207,8 @@ class _MyPageState extends State<MyPage> {
     } catch (e) {
       print(e);
     }
-    Navigator.pop(context);
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>
+        LoginPage(title: 'Login Page')));
   }
 
   @override
@@ -233,7 +233,7 @@ class _MyPageState extends State<MyPage> {
                 ),
               ),
               RaisedButton(
-                child: Text('Sign Out Youtube'),
+                child: Text('Sign Out Google'),
                 onPressed: () {
                   _handleSignOut().catchError((e) => print(e));
                 },
@@ -370,7 +370,7 @@ class _TimelinePageState extends State<TimelinePage> {
                 Container(
                     margin: EdgeInsets.all(10.0),
                     child: ListTile(
-                      title: Text(followListTitleGrobal[messegeListGrobal[index]["userYoutubeId"]]),
+                      title: Text(followListTitleGrobal[messegeListGrobal[index]["userYoutubeId"].toString()]),
                       leading: Image.network(followListPhotoGrobal[messageList[index]["userYoutubeId"]]),
                       subtitle: Text(messageList[index]["message"].toString()),
                     )
@@ -383,7 +383,7 @@ class _TimelinePageState extends State<TimelinePage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>
+          Navigator.push(context, MaterialPageRoute(builder: (context) =>
               CreateMessagePage(user, youtubeUser)));
         },
         tooltip: 'Increment',
